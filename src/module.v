@@ -5,36 +5,32 @@ import v.reflection
 
 type InjectCb = fn () !
 
+interface Object {}
+
 pub interface InitService {
+mut:
 	on_init() !
 }
 
-/*
 pub interface DestroyService {
 	on_destroy()!
 }
-*/
+
 
 pub struct Service {
 	typ      int      [required]
-	instance voidptr  [required]
 	inject   InjectCb [required]
+// This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping 
+// the type on assignation
+	originalptr voidptr [required]
+mut:
+	instance &Object  [required]
 }
 
-fn (self &Service) init() ! {
-	if type_info := reflection.get_type(self.typ) {
-		println(type_info)
-		on_init_idx := index_of_first(type_info.sym.methods, fn (_idx int, method reflection.Function) bool {
-			return method.name == 'on_init' && method.args.len == 1
-		})
-		if on_init_idx != -1 {
-			service := unsafe { InitService(self.instance) }
-			println('on_init')
-			println(service)
-			println(self.instance)
-			service.on_init()!
-			println('Something really bad!')
-		}
+fn (mut self Service) init() ! {
+	if mut self.instance is InitService {
+		self.instance.on_init()!
+		println(self.instance)
 	}
 }
 
@@ -77,6 +73,21 @@ fn get_aliases[T]() []string {
 	return aliases_list
 }
 
+type ServiceOrNone = Service | bool
+
+fn (mut self Module) get_service_from_field(field FieldData, t_name string) !ServiceOrNone {
+	if field_inject_name := get_key(field.attrs) {
+		return  self.get_service_by_name(field_inject_name) or {
+			return error('Invalid injection name ${field_inject_name} for field ${field.name} in ${ t_name }')
+		}
+	} else if 'inject' in field.attrs {
+		return self.get_service(field.typ) or {
+			return error('Invalid injection type for field ${field.name} in ${t_name}')
+		}
+	}
+	return false
+}
+
 pub fn (mut self Module) register[T]() &T {
 	mut new_service := &T{}
 	typ_idx := typeof[T]().idx
@@ -93,18 +104,12 @@ pub fn (mut self Module) register[T]() &T {
 		//name: T.name
 		typ: typ_idx
 		instance: new_service
-		inject: fn [self, mut new_service] [T]() ! {
+		originalptr: new_service
+		inject: fn [mut self, mut new_service] [T]() ! {
 			$for field in T.fields {
-				if field_inject_name := get_key(field.attrs) {
-					service := self.get_service_by_name(field_inject_name) or {
-						return error('Invalid injection name ${field_inject_name} for field ${field.name} in ${T.name}')
-					}
-					new_service.$(field.name) = unsafe { service.instance }
-				} else if 'inject' in field.attrs {
-					service := self.get_service(field.typ) or {
-						return error('Invalid injection type for field ${field.name} in ${T.name}')
-					}
-					new_service.$(field.name) = unsafe { service.instance }
+				mut service := self.get_service_from_field(field,T.name)! 
+				if mut service is Service {
+					new_service.$(field.name) = unsafe { service.originalptr }
 				}
 			}
 		}
@@ -118,7 +123,7 @@ pub fn (self &Module) inject()! {
 	}
 }
 
-pub fn (self &Module) init()! {
+pub fn (mut self Module) init()! {
 	for typ in self.services.keys() {
 		println(typ)
 		println('init')
@@ -126,7 +131,7 @@ pub fn (self &Module) init()! {
 	}
 }
 
-fn (self &Module) get_service(service_idx int) !Service {
+fn (mut self Module) get_service(service_idx int) !Service {
 	return self.services[service_idx] or {
 		service_info := reflection.get_type(service_idx) or {
 			return err
@@ -136,16 +141,18 @@ fn (self &Module) get_service(service_idx int) !Service {
 }
 
 
-fn (self &Module) get_service_by_name(name string) !Service {
+fn (mut self Module) get_service_by_name(name string) !Service {
 	service_idx := self.aliases[name] or {return error('Service with name ${name} not available, see available: ${self.aliases.keys()}')}
 	return self.get_service(service_idx)
 }
 
-pub fn (self &Module) get[T](name ?string) !&T {
+pub fn (mut self Module) get[T](name ?string) !&T {
 	lookup_name := name or { T.name[1..] }
 	service := self.get_service_by_name(lookup_name)!
-	if service.typ == typeof[T]().idx {
-		return unsafe { &T(service.instance) }
+	if service.instance is T {
+		println(service.instance)
+		mut service_instance := service.instance
+		return service_instance
 	} else {
 		return error('Type ${T.name} is not valid')
 	}

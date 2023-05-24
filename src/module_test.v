@@ -25,7 +25,7 @@ fn set_up_module() Module {
 	return mod
 }
 
-fn te_st_basic_registration()!{
+fn test_basic_registration()!{
 	mut mod := Module{}
 	service := mod.register[SimpleService]()
 
@@ -33,13 +33,14 @@ fn te_st_basic_registration()!{
 	assert service == service_2
 }
 
-fn te_st_service_with_injection()!{
+fn test_service_with_injection()!{
 	mut mod := set_up_module()
 
 	subject := mod.register[SomeServiceWithInjection]()
 	mod.inject() or { panic(err)}
 
-	mod.get[SimpleService]('SimpleService')!.count = 42
+	mut service := mod.get[SimpleService]('SimpleService')!
+	service.count = 42
 
 	assert subject.serv.count == 42
 }
@@ -50,8 +51,10 @@ fn test_service_injection_with_custom_name()!{
 	subject := mod.register[SomeServiceWithInjection]()
 
 	mod.inject() or { panic(err)}
+	mut serv := subject.serv
 
-	mod.get[SimpleService](none)!.count = 42
+	serv.count = 42
+   
 
 	assert subject.custom_name.count == 42
 }
@@ -61,7 +64,7 @@ fn test_service_with_initialization()!{
 
 	mod.init()!
 
-	service := mod.get[SimpleService](none)!
+	service := mod.get[SimpleService]('Name')!
 
 	assert service.count == 33
 }
