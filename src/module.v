@@ -22,6 +22,7 @@ pub struct Service {
 	inject   InjectCb [required]
 // This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping 
 // the type on assignation
+// TODO: https://github.com/vlang/v/issues/18256
 	originalptr voidptr [required]
 mut:
 	instance &Object  [required]
