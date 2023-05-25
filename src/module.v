@@ -20,6 +20,7 @@ pub interface DestroyService {
 pub struct Service {
 	typ      int      [required]
 	inject   InjectCb [required]
+	name	string	[required]
 // This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping 
 // the type on assignation
 // TODO: https://github.com/vlang/v/issues/18256
@@ -31,7 +32,6 @@ mut:
 fn (mut self Service) init() ! {
 	if mut self.instance is InitService {
 		self.instance.on_init()!
-		println(self.instance)
 	}
 }
 
@@ -102,15 +102,22 @@ pub fn (mut self Module) register[T]() &T {
 		self.aliases[alias] = typ_idx
 	}
 	self.services[typ_idx] = Service{
-		//name: T.name
+		name: T.name
 		typ: typ_idx
 		instance: new_service
 		originalptr: new_service
 		inject: fn [mut self, mut new_service] [T]() ! {
 			$for field in T.fields {
-				mut service := self.get_service_from_field(field,T.name)! 
-				if mut service is Service {
-					new_service.$(field.name) = unsafe { service.originalptr }
+				$if field.typ !is string {
+					mut service := self.get_service_from_field(field,T.name)! 
+					if mut service is Service {
+						if service.typ != field.typ || field.indirections==0{
+							return error("Type of property '${field.name}' in '${T.name}' must be ${service.name} as Reference")
+						}
+						unsafe {
+						new_service.$(field.name) =  service.originalptr 
+						}
+					}
 				}
 			}
 		}
@@ -126,8 +133,6 @@ pub fn (self &Module) inject()! {
 
 pub fn (mut self Module) init()! {
 	for typ in self.services.keys() {
-		println(typ)
-		println('init')
 		self.services[typ].init()!
 	}
 }
@@ -151,7 +156,6 @@ pub fn (mut self Module) get[T](name ?string) !&T {
 	lookup_name := name or { T.name[1..] }
 	service := self.get_service_by_name(lookup_name)!
 	if service.instance is T {
-		println(service.instance)
 		mut service_instance := service.instance
 		return service_instance
 	} else {
