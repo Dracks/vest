@@ -46,4 +46,4 @@ mod.import_module(mut submod)
 mod.init()!
 ```
 
-Also you can set a module as global creating it like `Module{global: true`, once this is imported, the services of this module will be available accross all modules. **Only to be used with specific cases, but should not be used normally**
+Also you can set a module as global creating it like `Module{global: true}`, once this is imported, the services of this module will be available accross all modules. **Only to be used with specific cases, but should not be used normally**
