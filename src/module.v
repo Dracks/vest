@@ -3,6 +3,11 @@ module vest
 import arrays { index_of_first }
 import v.reflection
 
+const (
+	inject_key = 'inject:'
+	provide_key = 'provide='
+)
+
 type InjectCb = fn () !
 
 interface Object {}
@@ -41,10 +46,6 @@ mut:
 	services map[int]Service = map[int]Service{}
 }
 
-const (
-	inject_key = 'inject:'
-	provide_key = 'provide='
-)
 
 fn get_key(attrs []string) ?string {
 	first_inject_index := index_of_first(attrs, fn (idx int, attr string) bool {
@@ -152,9 +153,12 @@ fn (mut self Module) get_service_by_name(name string) !Service {
 	return self.get_service(service_idx)
 }
 
-pub fn (mut self Module) get[T](name ?string) !&T {
-	lookup_name := name or { T.name[1..] }
-	service := self.get_service_by_name(lookup_name)!
+pub fn (mut self Module) get[T](optional_name ?string) !&T {
+	service := if lookup_name:=optional_name {
+		self.get_service_by_name(lookup_name)!
+	} else {
+		self.get_service(typeof[T]().idx)!
+	}
 	if service.instance is T {
 		mut service_instance := service.instance
 		return service_instance
