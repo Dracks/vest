@@ -33,7 +33,7 @@ fn test_service_with_injection()!{
 	mut mod := set_up_module()
 
 	subject := mod.register[SomeServiceWithInjection]()
-	mod.inject() or { panic(err)}
+	mod.init() or { panic(err)}
 
 	mut service := mod.get[SimpleService]('SimpleService')!
 	service.count = 42
@@ -46,7 +46,7 @@ fn test_service_injection_with_custom_name()!{
 
 	subject := mod.register[SomeServiceWithInjection]()
 
-	mod.inject() or { panic(err)}
+	mod.init() or { panic(err)}
 	mut serv := subject.serv
 
 	serv.count = 42
@@ -77,7 +77,7 @@ fn test_service_with_interface()!{
 	mut mod := set_up_module()
 	mod.register[ServiceWithInterface]()
 
-	mod.inject() or {
+	mod.init() or {
 		assert err.msg() == "Type of property 'serv' in '.ServiceWithInterface' must be .SimpleService as Reference"
 		return
 	}
@@ -88,7 +88,7 @@ fn test_service_without_reference()!{
 	mut mod := set_up_module()
 	mod.register[ServiceWithoutReference]()
 
-	mod.inject() or {
+	mod.init() or {
 		assert err.msg() == "Type of property 'serv' in '.ServiceWithoutReference' must be .SimpleService as Reference"
 		return
 	}
