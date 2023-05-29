@@ -41,11 +41,16 @@ fn (mut self Service) init() ! {
 }
 
 pub struct Module {
+	global bool
 mut:
+// ToDo, this will be better done with some kind of build factory
+	is_injected bool
+	is_init bool
 	aliases  map[string]int  = map[string]int{}
 	services map[int]Service = map[int]Service{}
+	imports []&Module = []&Module{}
+	globals []&Module = []&Module{}
 }
-
 
 fn get_key(attrs []string) ?string {
 	first_inject_index := index_of_first(attrs, fn (idx int, attr string) bool {
@@ -126,31 +131,101 @@ pub fn (mut self Module) register[T]() &T {
 	return new_service
 }
 
-pub fn (self &Module) inject()! {
-	for typ in self.services.keys() {
-		self.services[typ].inject()!
+fn (mut self Module) internal_inject()! {
+	if !self.is_injected {
+		self.is_injected = true
+		
+		for mut mod in self.imports {
+			mod.internal_inject()!
+		}
+
+		for typ in self.services.keys() {
+			self.services[typ].inject()!
+		}
 	}
 }
 
-pub fn (mut self Module) init()! {
-	for typ in self.services.keys() {
-		self.services[typ].init()!
+fn (mut self Module) internal_init()! {
+	if !self.is_init {
+		self.is_init = true
+		
+		for mut mod in self.imports{
+			mod.internal_init()!
+		}
+
+		for typ in self.services.keys() {
+			self.services[typ].init()!
+		}
 	}
+}
+
+fn (mut self Module) init()!{
+	for mut global_mod in self.globals {
+		global_mod.internal_inject()!
+	}
+	self.internal_inject()!
+
+	for mut global_mod in self.globals {
+		global_mod.internal_init()!
+	}
+	self.internal_init()!
+}
+
+fn (self &Module) internal_get_service(service_idx int) ?Service {
+	return self.services[service_idx] or {return none}
 }
 
 fn (mut self Module) get_service(service_idx int) !Service {
-	return self.services[service_idx] or {
-		service_info := reflection.get_type(service_idx) or {
-			return err
-		}
-		return error('Service with name ${service_info.name} not available, see available: ${self.services.keys()}')
+	mut retrieved_service := self.internal_get_service(service_idx)
+	if service := retrieved_service{
+		return service
 	}
+
+	for mod in self.imports {
+		if service := mod.internal_get_service(service_idx) {
+			return service
+		}
+	}
+	
+	for mod in self.globals {
+		if service := mod.internal_get_service(service_idx) {
+			return service
+		}
+	}
+	
+	service_info := reflection.get_type(service_idx) or {
+		return err
+	}
+	return error('Service with name ${service_info.name} not available, see available: ${self.services.keys()}')
+}
+
+fn (self &Module) internal_get_service_by_name(name string) ?Service {
+	if service_idx := self.aliases[name] {
+		return self.internal_get_service(service_idx)
+	}
+	return none
 }
 
 
 fn (mut self Module) get_service_by_name(name string) !Service {
-	service_idx := self.aliases[name] or {return error('Service with name ${name} not available, see available: ${self.aliases.keys()}')}
-	return self.get_service(service_idx)
+	mut retrieved_service := self.internal_get_service_by_name(name)
+	if service := retrieved_service{
+		return service
+	}
+
+	for mod in self.imports {
+		if service := mod.internal_get_service_by_name(name) {
+			return service
+		}
+	}
+	
+	for mod in self.globals {
+		if service := mod.internal_get_service_by_name(name) {
+			return service
+		}
+	}
+	
+	return error('Service with name ${name} not available, see available: ${self.aliases.keys()}')
 }
 
 pub fn (mut self Module) get[T](optional_name ?string) !&T {
