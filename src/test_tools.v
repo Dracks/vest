@@ -8,6 +8,10 @@ pub mut:
 	boolean bool
 }
 
+fn (self SimpleService) to_on_init() InitService {
+	return self
+}
+
 pub fn (mut self SimpleService) on_init()! {
 	self.count = 33
 	self.text = "Hello world"

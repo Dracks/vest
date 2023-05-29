@@ -6,8 +6,15 @@ and the providers can be exported to be reused in other modules
 ## Usage
 
 ```vlang
+import Dracks.vest {Module, InitService}
+
 struct ServiceToBeInjected {
     // Whatever you wish here
+}
+
+// This method is not really needed, but it's a good way to ensure you implemented the on_init correctly
+fn (self ServiceToBeInjected) to_init_service() InitService {
+    return self
 }
 
 fn (mut self ServiceToBeInjected) on_init()! {
