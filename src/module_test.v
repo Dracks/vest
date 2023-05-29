@@ -5,21 +5,10 @@ mut:
 	count int
 }
 
-[provide: Name]
-struct SimpleService{
-pub mut:
-	count int
-}
-
-pub fn (mut self SimpleService) on_init()! {
-	println('On init!')
-	self.count = 33
-}
-
 struct SomeServiceWithInjection {
 pub:
 	serv &SimpleService [inject]
-	custom_name &SimpleService [inject: Name]
+	custom_name &SimpleService [inject: DifferentName]
 }
 
 struct ServiceWithInterface {
@@ -30,12 +19,6 @@ pub:
 struct ServiceWithoutReference {
 pub: 
 	serv SomeInterface [inject: SimpleService]
-}
-
-fn set_up_module() &Module {
-	mut mod := &Module{}
-	service := mod.register[SimpleService]()
-	return mod
 }
 
 fn test_basic_registration()!{
@@ -76,8 +59,18 @@ fn test_service_with_initialization()!{
 
 	mod.init()!
 
-	service := mod.get[SimpleService]('Name')!
+	service := mod.get[SimpleService]('DifferentName')!
 	assert service.count == 33
+}
+
+fn test_get_wrong_name()!{
+	mut mod := set_up_module()
+
+	mod.get[SimpleService]('Name') or {
+		assert err.msg() == "Service with name Name not available, see available: ['SimpleService', 'DifferentName']"
+		return
+	}
+	assert false
 }
 
 fn test_service_with_interface()!{
@@ -85,7 +78,7 @@ fn test_service_with_interface()!{
 	mod.register[ServiceWithInterface]()
 
 	mod.inject() or {
-		println(err)
+		assert err.msg() == "Type of property 'serv' in '.ServiceWithInterface' must be .SimpleService as Reference"
 		return
 	}
 	assert false
@@ -96,7 +89,7 @@ fn test_service_without_reference()!{
 	mod.register[ServiceWithoutReference]()
 
 	mod.inject() or {
-		println(err)
+		assert err.msg() == "Type of property 'serv' in '.ServiceWithoutReference' must be .SimpleService as Reference"
 		return
 	}
 	assert false
