@@ -34,6 +34,10 @@ mod.register[StructThatHasInjectedFields]()
 
 // Will inject dependencies and call all on_init methods
 mod.init()!
+
+// Also, you can inject into instances that you wish, for example
+mut object := StructThatHasInjectedFields{}
+mod.inject_to_object(mut object)
 ```
 
 ### Submodules
