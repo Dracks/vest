@@ -10,7 +10,7 @@ const (
 
 type InjectCb = fn () !
 
-interface Object {}
+pub interface Object {}
 
 pub interface InitService {
 mut:
@@ -18,20 +18,19 @@ mut:
 }
 
 pub interface DestroyService {
-	on_destroy()!
+	on_destroy() !
 }
 
-
 pub struct Service {
-	typ      int      [required]
-	inject   InjectCb [required]
-	name	string	[required]
-// This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping 
-// the type on assignation
-// TODO: https://github.com/vlang/v/issues/18256
+	typ    int      [required]
+	inject InjectCb [required]
+	name   string   [required]
+	// This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping
+	// the type on assignation
+	// TODO: https://github.com/vlang/v/issues/18256
 	originalptr voidptr [required]
 mut:
-	instance &Object  [required]
+	instance &Object [required]
 }
 
 fn (mut self Service) init() ! {
@@ -70,8 +69,8 @@ fn get_aliases[T]() []string {
 		info := typ.sym.info
 		if info is reflection.Struct {
 			for attr in info.attrs.filter(fn (attr string) bool {
-					return attr.starts_with(provide_key)
-				}) {
+				return attr.starts_with(provide_key)
+			}) {
 				aliases_list << attr[provide_key.len..]
 			}
 		}
@@ -84,8 +83,8 @@ type ServiceOrNone = Service | bool
 
 fn (mut self Module) get_service_from_field(field FieldData, t_name string) !ServiceOrNone {
 	if field_inject_name := get_key(field.attrs) {
-		return  self.get_service_by_name(field_inject_name) or {
-			return error('Invalid injection name ${field_inject_name} for field ${field.name} in ${ t_name }')
+		return self.get_service_by_name(field_inject_name) or {
+			return error('Invalid injection name ${field_inject_name} for field ${field.name} in ${t_name}')
 		}
 	} else if 'inject' in field.attrs {
 		return self.get_service(field.typ) or {
@@ -95,41 +94,6 @@ fn (mut self Module) get_service_from_field(field FieldData, t_name string) !Ser
 	return false
 }
 
-pub fn (mut self Module) register[T]() &T {
-	mut new_service := &T{}
-	typ_idx := typeof[T]().idx
-	typ := reflection.get_type(typ_idx) or {panic('Type not found ${T.name}')}
-
-	if typ_idx in self.services {
-		panic('Type ${typ.name} has been already registered')
-	}
-
-	for alias in get_aliases[T]() {
-		self.aliases[alias] = typ_idx
-	}
-	self.services[typ_idx] = Service{
-		name: T.name
-		typ: typ_idx
-		instance: new_service
-		originalptr: new_service
-		inject: fn [mut self, mut new_service] [T]() ! {
-			$for field in T.fields {
-				$if field.typ !is string {
-					mut service := self.get_service_from_field(field,T.name)! 
-					if mut service is Service {
-						if service.typ != field.typ || field.indirections==0{
-							return error("Type of property '${field.name}' in '${T.name}' must be ${service.name} as Reference")
-						}
-						unsafe {
-						new_service.$(field.name) =  service.originalptr 
-						}
-					}
-				}
-			}
-		}
-	}
-	return new_service
-}
 
 fn (mut self Module) internal_inject()! {
 	if !self.is_injected {
@@ -205,7 +169,6 @@ fn (self &Module) internal_get_service_by_name(name string) ?Service {
 	}
 	return none
 }
-
 
 fn (mut self Module) get_service_by_name(name string) !Service {
 	mut retrieved_service := self.internal_get_service_by_name(name)
