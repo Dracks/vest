@@ -16,3 +16,15 @@ fn (mut self Module) import_module(mut mod &Module){
 		mod.globals = self.globals
 	}
 }
+
+fn (mut self Module) export[T]() {
+	self.exported_services << typeof[T]().idx
+}
+
+fn (mut self Module) register_and_export[T]() &T {
+	new_service := self.register[T]()
+
+	self.export[T]()
+
+	return new_service
+}

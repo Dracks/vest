@@ -20,6 +20,6 @@ pub fn (mut self SimpleService) on_init()! {
 
 pub fn set_up_module() Module {
 	mut mod := Module{}
-	mod.register[SimpleService]()
+	mod.register_and_export[SimpleService]()
 	return mod
 }
