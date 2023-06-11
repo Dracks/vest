@@ -47,6 +47,7 @@ mut:
 	is_init bool
 	aliases  map[string]int  = map[string]int{}
 	services map[int]Service = map[int]Service{}
+	exported_services []int = []int{}
 	imports []&Module = []&Module{}
 	globals []&Module = []&Module{}
 }
@@ -135,24 +136,27 @@ fn (mut self Module) init()!{
 	self.internal_init()!
 }
 
-fn (self &Module) internal_get_service(service_idx int) ?Service {
+fn (self &Module) internal_get_service(service_idx int, exported bool) ?Service {
+	if exported && service_idx !in self.exported_services {
+		return none
+	}
 	return self.services[service_idx] or {return none}
 }
 
 fn (mut self Module) get_service(service_idx int) !Service {
-	mut retrieved_service := self.internal_get_service(service_idx)
+	mut retrieved_service := self.internal_get_service(service_idx, false)
 	if service := retrieved_service{
 		return service
 	}
 
 	for mod in self.imports {
-		if service := mod.internal_get_service(service_idx) {
+		if service := mod.internal_get_service(service_idx, true) {
 			return service
 		}
 	}
 	
 	for mod in self.globals {
-		if service := mod.internal_get_service(service_idx) {
+		if service := mod.internal_get_service(service_idx, true) {
 			return service
 		}
 	}
@@ -163,27 +167,27 @@ fn (mut self Module) get_service(service_idx int) !Service {
 	return error('Service with name ${service_info.name} not available, see available: ${self.services.keys()}')
 }
 
-fn (self &Module) internal_get_service_by_name(name string) ?Service {
+fn (self &Module) internal_get_service_by_name(name string, exported bool) ?Service {
 	if service_idx := self.aliases[name] {
-		return self.internal_get_service(service_idx)
+		return self.internal_get_service(service_idx, exported)
 	}
 	return none
 }
 
 fn (mut self Module) get_service_by_name(name string) !Service {
-	mut retrieved_service := self.internal_get_service_by_name(name)
+	mut retrieved_service := self.internal_get_service_by_name(name, false)
 	if service := retrieved_service{
 		return service
 	}
 
 	for mod in self.imports {
-		if service := mod.internal_get_service_by_name(name) {
+		if service := mod.internal_get_service_by_name(name, true) {
 			return service
 		}
 	}
 	
 	for mod in self.globals {
-		if service := mod.internal_get_service_by_name(name) {
+		if service := mod.internal_get_service_by_name(name, true) {
 			return service
 		}
 	}
