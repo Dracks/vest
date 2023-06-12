@@ -48,7 +48,7 @@ You can create submodules to pack your services together. (Currently all service
 
 mut submod := Module{}
 
-submod.register[ServiceToBeInjected]()
+submod.register_and_export[ServiceToBeInjected]()
 
 mut mod := Module{}
 mod.import_module(mut submod)
