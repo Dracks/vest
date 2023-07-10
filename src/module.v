@@ -124,7 +124,7 @@ fn (mut self Module) internal_init()! {
 	}
 }
 
-fn (mut self Module) init()!{
+pub fn (mut self Module) init()!{
 	for mut global_mod in self.globals {
 		global_mod.internal_inject()!
 	}

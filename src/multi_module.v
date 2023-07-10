@@ -1,6 +1,6 @@
 module vest
 
-fn (mut self Module) import_module(mut mod &Module){
+pub fn (mut self Module) import_module(mut mod &Module){
 	if mod.global {
 		self.globals << mod
 	} else {
@@ -21,7 +21,7 @@ fn (mut self Module) export[T]() {
 	self.exported_services << typeof[T]().idx
 }
 
-fn (mut self Module) register_and_export[T]() &T {
+pub fn (mut self Module) register_and_export[T]() &T {
 	new_service := self.register[T]()
 
 	self.export[T]()
