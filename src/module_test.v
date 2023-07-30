@@ -7,33 +7,33 @@ mut:
 
 struct SomeServiceWithInjection {
 pub:
-	serv &SimpleService [inject]
+	serv        &SimpleService [inject]
 	custom_name &SimpleService [inject: DifferentName]
 }
 
 struct ServiceWithInterface {
-pub: 
+pub:
 	serv SomeInterface [inject: SimpleService]
 }
 
 struct ServiceWithoutReference {
-pub: 
+pub:
 	serv SomeInterface [inject: SimpleService]
 }
 
-fn test_basic_registration()!{
+fn test_basic_registration() ! {
 	mut mod := Module{}
 	service := mod.register[SimpleService]()
 
-	service_2 := mod.get[SimpleService](none) or { panic(err)}
+	service_2 := mod.get[SimpleService](none) or { panic(err) }
 	assert service == service_2
 }
 
-fn test_service_with_injection()!{
+fn test_service_with_injection() ! {
 	mut mod := set_up_module()
 
 	subject := mod.register[SomeServiceWithInjection]()
-	mod.init() or { panic(err)}
+	mod.init() or { panic(err) }
 
 	mut service := mod.get[SimpleService]('SimpleService')!
 	service.count = 42
@@ -41,20 +41,20 @@ fn test_service_with_injection()!{
 	assert subject.serv.count == 42
 }
 
-fn test_service_injection_with_custom_name()!{
+fn test_service_injection_with_custom_name() ! {
 	mut mod := set_up_module()
 
 	subject := mod.register[SomeServiceWithInjection]()
 
-	mod.init() or { panic(err)}
+	mod.init() or { panic(err) }
 	mut serv := subject.serv
 
 	serv.count = 42
-   
+
 	assert subject.custom_name.count == 42
 }
 
-fn test_service_with_initialization()!{
+fn test_service_with_initialization() ! {
 	mut mod := set_up_module()
 
 	mod.init()!
@@ -63,7 +63,7 @@ fn test_service_with_initialization()!{
 	assert service.count == 33
 }
 
-fn test_get_wrong_name()!{
+fn test_get_wrong_name() ! {
 	mut mod := set_up_module()
 
 	mod.get[SimpleService]('Name') or {
@@ -73,7 +73,7 @@ fn test_get_wrong_name()!{
 	assert false
 }
 
-fn test_service_with_interface()!{
+fn test_service_with_interface() ! {
 	mut mod := set_up_module()
 	mod.register[ServiceWithInterface]()
 
@@ -84,7 +84,7 @@ fn test_service_with_interface()!{
 	assert false
 }
 
-fn test_service_without_reference()!{
+fn test_service_without_reference() ! {
 	mut mod := set_up_module()
 	mod.register[ServiceWithoutReference]()
 
