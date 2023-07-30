@@ -37,11 +37,11 @@ mut:
 
 fn get_key(attrs []string) ?string {
 	first_inject_index := index_of_first(attrs, fn (idx int, attr string) bool {
-		return attr.starts_with(.inject_key)
+		return attr.starts_with(inject_key)
 	})
 	if first_inject_index >= 0 {
 		attr := attrs[first_inject_index]
-		name := attr[.inject_key.len..]
+		name := attr[inject_key.len..]
 		return name.trim(' ')
 	}
 	return none
@@ -53,9 +53,9 @@ fn get_aliases[T]() []string {
 		info := typ.sym.info
 		if info is reflection.Struct {
 			for attr in info.attrs.filter(fn (attr string) bool {
-				return attr.starts_with(.provide_key)
+				return attr.starts_with(provide_key)
 			}) {
-				aliases_list << attr[.provide_key.len..]
+				aliases_list << attr[provide_key.len..]
 			}
 		}
 	}
