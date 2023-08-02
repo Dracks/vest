@@ -143,7 +143,7 @@ fn (mut self Module) get_service(service_idx int) !Service {
 	}
 
 	service_info := reflection.get_type(service_idx) or { return err }
-	return error('Service with name ${service_info.name} not available, see available: ${self.services.keys()}')
+	return error('Service name ${service_info.name} with type ${service_idx} not available, see available: ${self.services.keys()}')
 }
 
 fn (self &Module) internal_get_service_by_name(name string, exported bool) ?Service {

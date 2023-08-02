@@ -94,3 +94,36 @@ fn test_use_factory_with_simple_object() ! {
 	service := mod.get[SimpleServiceInstance](none)!
 	assert service.text == 'We use a factory!'
 }
+
+struct DependencyWithEverything {
+	serv1 &SimpleService            [inject]
+	serv2 &SomeServiceWithInjection [inject]
+}
+
+fn test_use_factory_with_real_dependencies() ! {
+	mut global_mod := Module{
+		global: true
+	}
+
+	global_mod.register_and_export[SimpleService]()
+
+	mut sub_mod := Module{}
+
+	sub_mod.register_and_export[SomeServiceWithInjection]()
+
+	mut mod := Module{}
+
+	mod.import_module(mut global_mod)
+	mod.import_module(mut sub_mod)
+
+	mod.use_factory(fn (dep DependencyWithEverything) DependencyWithEverything {
+		return dep
+	}, false)
+
+	mod.init()!
+
+	dep := mod.get[DependencyWithEverything](none)!
+
+	assert dep.serv1.text == 'Hello world'
+	assert dep.serv2.service.text == 'Hello world'
+}

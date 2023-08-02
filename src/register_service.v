@@ -23,9 +23,10 @@ fn (mut self Service) init() ! {
 struct Factory {
 	typ          int
 	dependencies []int
+	can_instantiate fn () bool
 	build        fn () !
 mut:
-	instantiated bool
+	instantiated bool = false
 }
 
 [inline]
@@ -91,7 +92,8 @@ pub fn (mut self Module) use_instance[T](data T, export bool) {
 	}
 }
 
-pub fn (mut self Module) use_factory[F, T](factory fn (c F) &T, export bool) {
+pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
+	println('WARNING: Factories are in alpha stage, can have injection problems')
 	typ_idx := typeof[T]().idx
 	typ := reflection.get_type(typ_idx) or { panic('Type not found ${T.name}') }
 
@@ -108,13 +110,39 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) &T, export bool) {
 	$for field in F.fields {
 		dependencies << field.typ
 	}
+	/*mut dependencies_object := &F{}
+	self.inject_to_object(mut dependencies_object) or { panic(err)}*/
+	internal_export := export
+
 	self.factories << &Factory{
 		typ: typ_idx
 		dependencies: dependencies
-		build: fn [mut self, factory, export] [F]() ! {
+		can_instantiate: fn [self, dependencies]() bool{
+			for dep_id in dependencies {
+				if !self.check_exist(dep_id, none) {
+					return false
+				}
+			}
+			return true
+		}
+		build: fn [mut self, factory, typ_idx, internal_export] [F,T]() ! {
+			println("Building factory for ${T.name}")
 			mut dependencies_object := &F{}
 			self.inject_to_object(mut dependencies_object)!
-			self.use_instance(factory(dependencies_object), export)
+			// self.use_instance(factory(dependencies_object), internal_export)
+			original_instance := factory(dependencies_object)
+			instance := &original_instance
+			self.services[typ_idx] = Service{
+				name: T.name
+				typ: typ_idx
+				instance: instance
+				originalptr: instance
+				inject: fn () ! {}
+			}
+
+			if internal_export {
+				self.export[T]()
+			}
 		}
 	}
 }
