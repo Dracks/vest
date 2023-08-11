@@ -86,3 +86,25 @@ jobs:
 
       - name: Run tests
         run: v test .
+
+  check-format:
+    needs: simple-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restore Vlang
+        uses: actions/cache/restore@v3
+        with:
+          path: ${{ env.WORK_PATH }}vlang/
+          key: vlang-${{ env.V_VERSION }}
+          fail-on-cache-miss: true
+
+      - name: Install V
+        uses: vlang/setup-v@v1.3
+        with:
+          check-latest: true
+
+      - name: Checkout ${{ github.event.repository.name }}
+        uses: actions/checkout@v3
+
+      - name: Run tests
+        run: v fmt -c .

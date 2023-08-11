@@ -4,7 +4,7 @@ import arrays { index_of_first }
 import v.reflection
 
 const (
-	inject_key = 'inject:'
+	inject_key  = 'inject:'
 	provide_key = 'provide='
 )
 
@@ -21,58 +21,41 @@ pub interface DestroyService {
 	on_destroy() !
 }
 
-pub struct Service {
-	typ    int      [required]
-	inject InjectCb [required]
-	name   string   [required]
-	// This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping
-	// the type on assignation
-	// TODO: https://github.com/vlang/v/issues/18256
-	originalptr voidptr [required]
-mut:
-	instance &Object [required]
-}
-
-fn (mut self Service) init() ! {
-	if mut self.instance is InitService {
-		self.instance.on_init()!
-	}
-}
-
 pub struct Module {
 	global bool
 mut:
-// ToDo, this will be better done with some kind of build factory
-	is_injected bool
-	is_init bool
-	aliases  map[string]int  = map[string]int{}
-	services map[int]Service = map[int]Service{}
-	exported_services []int = []int{}
-	imports []&Module = []&Module{}
-	globals []&Module = []&Module{}
+	// ToDo, this will be better done with some kind of build factory
+	is_injected       bool
+	is_init           bool
+	factories         []&Factory      = []&Factory{}
+	aliases           map[string]int  = map[string]int{}
+	services          map[int]Service = map[int]Service{}
+	exported_services []int     = []int{}
+	imports           []&Module = []&Module{}
+	globals           []&Module = []&Module{}
 }
 
 fn get_key(attrs []string) ?string {
 	first_inject_index := index_of_first(attrs, fn (idx int, attr string) bool {
-		return attr.starts_with(inject_key)
+		return attr.starts_with(vest.inject_key)
 	})
 	if first_inject_index >= 0 {
 		attr := attrs[first_inject_index]
-		name := attr[inject_key.len..]
+		name := attr[vest.inject_key.len..]
 		return name.trim(' ')
 	}
 	return none
 }
 
 fn get_aliases[T]() []string {
-	mut aliases_list := [T.name[1..]]
+	mut aliases_list := [T.name]
 	if typ := reflection.get_type(typeof[T]().idx) {
 		info := typ.sym.info
 		if info is reflection.Struct {
 			for attr in info.attrs.filter(fn (attr string) bool {
-				return attr.starts_with(provide_key)
+				return attr.starts_with(vest.provide_key)
 			}) {
-				aliases_list << attr[provide_key.len..]
+				aliases_list << attr[vest.provide_key.len..]
 			}
 		}
 	}
@@ -95,57 +78,55 @@ fn (mut self Module) get_service_from_field(field FieldData, t_name string) !Ser
 	return false
 }
 
-
-fn (mut self Module) internal_inject()! {
-	if !self.is_injected {
-		self.is_injected = true
-		
-		for mut mod in self.imports {
-			mod.internal_inject()!
-		}
-
-		for typ in self.services.keys() {
-			self.services[typ].inject()!
-		}
+fn (self &Module) internal_check_exist(typ_idx int, optional_name ?string) bool {
+	if name := optional_name {
+		return name in self.aliases
+	} else {
+		return typ_idx in self.services
 	}
 }
 
-fn (mut self Module) internal_init()! {
-	if !self.is_init {
-		self.is_init = true
-		
-		for mut mod in self.imports{
-			mod.internal_init()!
-		}
-
-		for typ in self.services.keys() {
-			self.services[typ].init()!
-		}
-	}
+fn (self &Module) internal_check_type_exported(typ_id int) bool {
+	return self.exported_services.filter(it == typ_id).len > 0
 }
 
-fn (mut self Module) init()!{
-	for mut global_mod in self.globals {
-		global_mod.internal_inject()!
+fn (self &Module) internal_check_name_exported(name string) bool {
+	if name in self.aliases {
+		typ_id := self.aliases[name]
+		return self.internal_check_type_exported(typ_id)
 	}
-	self.internal_inject()!
+	return false
+}
 
-	for mut global_mod in self.globals {
-		global_mod.internal_init()!
+fn (self &Module) check_exist(typ_idx int, optional_name ?string) bool {
+	mut exists := self.internal_check_exist(typ_idx, optional_name)
+	if name := optional_name {
+		if !exists && self.globals.filter(it.internal_check_name_exported(name)).len > 0 {
+			exists = true
+		} else if !exists {
+			exists = self.imports.filter(it.internal_check_name_exported(name)).len > 0
+		}
+	} else {
+		if !exists && self.globals.filter(it.internal_check_type_exported(typ_idx)).len > 0 {
+			exists = true
+		} else if !exists {
+			exists = self.imports.filter(it.internal_check_type_exported(typ_idx)).len > 0
+		}
 	}
-	self.internal_init()!
+
+	return exists
 }
 
 fn (self &Module) internal_get_service(service_idx int, exported bool) ?Service {
 	if exported && service_idx !in self.exported_services {
 		return none
 	}
-	return self.services[service_idx] or {return none}
+	return self.services[service_idx] or { return none }
 }
 
 fn (mut self Module) get_service(service_idx int) !Service {
 	mut retrieved_service := self.internal_get_service(service_idx, false)
-	if service := retrieved_service{
+	if service := retrieved_service {
 		return service
 	}
 
@@ -154,17 +135,15 @@ fn (mut self Module) get_service(service_idx int) !Service {
 			return service
 		}
 	}
-	
+
 	for mod in self.globals {
 		if service := mod.internal_get_service(service_idx, true) {
 			return service
 		}
 	}
-	
-	service_info := reflection.get_type(service_idx) or {
-		return err
-	}
-	return error('Service with name ${service_info.name} not available, see available: ${self.services.keys()}')
+
+	service_info := reflection.get_type(service_idx) or { return err }
+	return error('Service name ${service_info.name} with type ${service_idx} not available, see available: ${self.services.keys()}')
 }
 
 fn (self &Module) internal_get_service_by_name(name string, exported bool) ?Service {
@@ -176,7 +155,7 @@ fn (self &Module) internal_get_service_by_name(name string, exported bool) ?Serv
 
 fn (mut self Module) get_service_by_name(name string) !Service {
 	mut retrieved_service := self.internal_get_service_by_name(name, false)
-	if service := retrieved_service{
+	if service := retrieved_service {
 		return service
 	}
 
@@ -185,18 +164,18 @@ fn (mut self Module) get_service_by_name(name string) !Service {
 			return service
 		}
 	}
-	
+
 	for mod in self.globals {
 		if service := mod.internal_get_service_by_name(name, true) {
 			return service
 		}
 	}
-	
+
 	return error('Service with name ${name} not available, see available: ${self.aliases.keys()}')
 }
 
 pub fn (mut self Module) get[T](optional_name ?string) !&T {
-	service := if lookup_name:=optional_name {
+	service := if lookup_name := optional_name {
 		self.get_service_by_name(lookup_name)!
 	} else {
 		self.get_service(typeof[T]().idx)!
