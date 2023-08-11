@@ -2,7 +2,7 @@ module vest
 
 struct SomeServiceWithInjection {
 	service   &SimpleService [inject]
-	with_name &SimpleService [inject: SimpleService]
+	with_name &SimpleService ['inject: vest.SimpleService']
 }
 
 struct SimpleServiceInstance {
@@ -58,7 +58,7 @@ fn test_import_nonexported_service() ! {
 	sub_mod2.register[SomeServiceWithInjection]()
 
 	mod.init() or {
-		assert err.msg() == 'Invalid injection type for field service in .SomeServiceWithInjection'
+		assert err.msg() == 'Invalid injection type for field service in vest.SomeServiceWithInjection'
 		return
 	}
 

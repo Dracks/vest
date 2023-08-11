@@ -21,10 +21,10 @@ fn (mut self Service) init() ! {
 }
 
 struct Factory {
-	typ          int
-	dependencies []int
-	can_instantiate fn () bool
-	build        fn () !
+	typ             int
+	dependencies    []int
+	can_instantiate fn () bool [required]
+	build           fn () !    [required]
 mut:
 	instantiated bool = false
 }
@@ -110,14 +110,15 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
 	$for field in F.fields {
 		dependencies << field.typ
 	}
-	/*mut dependencies_object := &F{}
+	/*
+	mut dependencies_object := &F{}
 	self.inject_to_object(mut dependencies_object) or { panic(err)}*/
 	internal_export := export
 
 	self.factories << &Factory{
 		typ: typ_idx
 		dependencies: dependencies
-		can_instantiate: fn [self, dependencies]() bool{
+		can_instantiate: fn [self, dependencies] () bool {
 			for dep_id in dependencies {
 				if !self.check_exist(dep_id, none) {
 					return false
@@ -125,8 +126,8 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
 			}
 			return true
 		}
-		build: fn [mut self, factory, typ_idx, internal_export] [F,T]() ! {
-			println("Building factory for ${T.name}")
+		build: fn [mut self, factory, typ_idx, internal_export] [F, T]() ! {
+			println('Building factory for ${T.name}')
 			mut dependencies_object := &F{}
 			self.inject_to_object(mut dependencies_object)!
 			// self.use_instance(factory(dependencies_object), internal_export)

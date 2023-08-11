@@ -13,12 +13,12 @@ pub:
 
 struct ServiceWithInterface {
 pub:
-	serv SomeInterface [inject: SimpleService]
+	serv SomeInterface ['inject: vest.SimpleService']
 }
 
 struct ServiceWithoutReference {
 pub:
-	serv SomeInterface [inject: SimpleService]
+	serv SomeInterface ['inject: vest.SimpleService']
 }
 
 fn test_basic_registration() ! {
@@ -35,7 +35,7 @@ fn test_service_with_injection() ! {
 	subject := mod.register[SomeServiceWithInjection]()
 	mod.init() or { panic(err) }
 
-	mut service := mod.get[SimpleService]('SimpleService')!
+	mut service := mod.get[SimpleService]('vest.SimpleService')!
 	service.count = 42
 
 	assert subject.serv.count == 42
@@ -67,7 +67,7 @@ fn test_get_wrong_name() ! {
 	mut mod := set_up_module()
 
 	mod.get[SimpleService]('Name') or {
-		assert err.msg() == "Service with name Name not available, see available: ['SimpleService', 'DifferentName']"
+		assert err.msg() == "Service with name Name not available, see available: ['vest.SimpleService', 'DifferentName']"
 		return
 	}
 	assert false
@@ -78,7 +78,7 @@ fn test_service_with_interface() ! {
 	mod.register[ServiceWithInterface]()
 
 	mod.init() or {
-		assert err.msg() == "Type of property 'serv' in '.ServiceWithInterface' must be .SimpleService as Reference"
+		assert err.msg() == "Type of property 'serv' in 'vest.ServiceWithInterface' must be vest.SimpleService as Reference"
 		return
 	}
 	assert false
@@ -89,7 +89,7 @@ fn test_service_without_reference() ! {
 	mod.register[ServiceWithoutReference]()
 
 	mod.init() or {
-		assert err.msg() == "Type of property 'serv' in '.ServiceWithoutReference' must be .SimpleService as Reference"
+		assert err.msg() == "Type of property 'serv' in 'vest.ServiceWithoutReference' must be vest.SimpleService as Reference"
 		return
 	}
 	assert false
