@@ -63,6 +63,7 @@ pub fn (mut self Module) build_factories() ! {
 		has_instantiated_factories = false
 		for mut factory in factories_list {
 			if factory.can_instantiate() {
+				println('Instantiating factory of ${factory.typ}')
 				has_instantiated_factories = true
 				factory.build()!
 				factory.instantiated = true

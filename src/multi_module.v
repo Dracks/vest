@@ -1,5 +1,23 @@
 module vest
 
+import arrays
+
+fn (self Module) get_all_childs(mut childs []&Module) {
+	for glob in self.globals {
+		if glob !in childs {
+			childs << glob
+			glob.get_all_childs(mut childs)
+		}
+	}
+
+	for mod in self.imports {
+		if mod !in childs {
+			childs << mod
+			mod.get_all_childs(mut childs)
+		}
+	}
+}
+
 pub fn (mut self Module) import_module(mut mod Module) {
 	if mod.global {
 		self.globals << mod
@@ -13,7 +31,12 @@ pub fn (mut self Module) import_module(mut mod Module) {
 				self.globals << global_mod
 			}
 		}
-		mod.globals = self.globals
+		mut childs := []&Module{}
+		childs << mod
+		mod.get_all_childs(mut childs)
+		for mut child_mod in childs {
+			child_mod.globals = self.globals
+		}
 	}
 }
 
