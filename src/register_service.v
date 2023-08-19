@@ -118,7 +118,8 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
 	self.factories << &Factory{
 		typ: typ_idx
 		dependencies: dependencies
-		can_instantiate: fn [self, dependencies] () bool {
+		// TODO this mut self is a problem, I need to avoid passing self here
+		can_instantiate: fn [mut self, dependencies] () bool {
 			for dep_id in dependencies {
 				if !self.check_exist(dep_id, none) {
 					return false
