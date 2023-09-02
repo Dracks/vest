@@ -26,7 +26,7 @@ struct Factory {
 	can_instantiate fn () bool [required]
 	build           fn () !    [required]
 mut:
-	instantiated bool = false
+	instantiated bool
 }
 
 [inline]
