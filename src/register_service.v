@@ -2,6 +2,8 @@ module vest
 
 import v.reflection
 
+struct Void{}
+
 pub struct Service {
 	typ    int      @[required]
 	inject InjectCb @[required]
@@ -11,7 +13,7 @@ pub struct Service {
 	// TODO: https://github.com/vlang/v/issues/18256
 	originalptr voidptr @[required]
 mut:
-	instance &Object @[required]
+	instance &Object = &Object(Void{}) @[required]
 }
 
 fn (mut self Service) init() ! {
