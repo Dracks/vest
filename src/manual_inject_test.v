@@ -1,7 +1,7 @@
 module vest
 
 struct SomeObject {
-	serv &SimpleService [inject]
+	serv &SimpleService = &SimpleService{} @[inject]
 }
 
 fn test_injecting_to_external_object() {

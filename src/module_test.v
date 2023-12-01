@@ -7,18 +7,18 @@ mut:
 
 struct SomeServiceWithInjection {
 pub:
-	serv        &SimpleService [inject]
-	custom_name &SimpleService [inject: DifferentName]
+	serv        &SimpleService @[inject]
+	custom_name &SimpleService @[inject: DifferentName]
 }
 
 struct ServiceWithInterface {
 pub:
-	serv SomeInterface ['inject: vest.SimpleService']
+	serv SomeInterface @['inject: vest.SimpleService']
 }
 
 struct ServiceWithoutReference {
 pub:
-	serv SomeInterface ['inject: vest.SimpleService']
+	serv SomeInterface @['inject: vest.SimpleService']
 }
 
 fn test_basic_registration() ! {

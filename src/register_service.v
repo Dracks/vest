@@ -3,15 +3,15 @@ module vest
 import v.reflection
 
 pub struct Service {
-	typ    int      [required]
-	inject InjectCb [required]
-	name   string   [required]
+	typ    int      @[required]
+	inject InjectCb @[required]
+	name   string   @[required]
 	// This will be a workarround as the reflection in V is not working correctly and is not unwrapping/wrapping
 	// the type on assignation
 	// TODO: https://github.com/vlang/v/issues/18256
-	originalptr voidptr [required]
+	originalptr voidptr @[required]
 mut:
-	instance &Object [required]
+	instance &Object @[required]
 }
 
 fn (mut self Service) init() ! {
@@ -23,13 +23,13 @@ fn (mut self Service) init() ! {
 struct Factory {
 	typ             int
 	dependencies    []int
-	can_instantiate fn () bool [required]
-	build           fn () !    [required]
+	can_instantiate fn () bool @[required]
+	build           fn () !    @[required]
 mut:
 	instantiated bool
 }
 
-[inline]
+@[inline]
 fn (self Module) is_registered(typ_idx int) bool {
 	if typ_idx in self.services {
 		return true

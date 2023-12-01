@@ -1,6 +1,6 @@
 module vest
 
-[provide: DifferentName]
+@[provide: DifferentName]
 pub struct SimpleService {
 pub mut:
 	count   int
