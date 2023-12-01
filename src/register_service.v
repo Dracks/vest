@@ -2,7 +2,7 @@ module vest
 
 import v.reflection
 
-struct Void{}
+struct Void {}
 
 pub struct Service {
 	typ    int      @[required]
