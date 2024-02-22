@@ -2,6 +2,8 @@ module vest
 
 import v.reflection
 
+struct Void {}
+
 pub struct Service {
 	typ    int      @[required]
 	inject InjectCb @[required]
@@ -26,7 +28,7 @@ struct Factory {
 	can_instantiate fn () bool @[required]
 	build           fn () !    @[required]
 mut:
-	instantiated bool = false
+	instantiated bool
 }
 
 @[inline]
