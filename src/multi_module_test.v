@@ -1,8 +1,8 @@
 module vest
 
 struct SomeServiceWithInjection {
-	service   &SimpleService [inject]
-	with_name &SimpleService ['inject: vest.SimpleService']
+	service   &SimpleService @[inject]
+	with_name &SimpleService @['inject: vest.SimpleService']
 }
 
 struct SimpleServiceInstance {
@@ -10,7 +10,7 @@ struct SimpleServiceInstance {
 }
 
 struct SomeServiceWithOnlyTypeInject {
-	service &SimpleServiceInstance [inject]
+	service &SimpleServiceInstance @[inject]
 }
 
 fn test_parent_can_inject_children() ! {
@@ -96,8 +96,8 @@ fn test_use_factory_with_simple_object() ! {
 }
 
 struct DependencyWithEverything {
-	serv1 &SimpleService            [inject]
-	serv2 &SomeServiceWithInjection [inject]
+	serv1 &SimpleService            @[inject]
+	serv2 &SomeServiceWithInjection @[inject]
 }
 
 fn test_use_factory_with_real_dependencies() ! {

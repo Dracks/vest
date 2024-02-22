@@ -3,10 +3,8 @@ module vest
 import arrays { index_of_first }
 import v.reflection
 
-const (
-	inject_key  = 'inject:'
-	provide_key = 'provide='
-)
+const inject_key = 'inject:'
+const provide_key = 'provide='
 
 type InjectCb = fn () !
 
