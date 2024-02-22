@@ -13,7 +13,7 @@ pub struct Service {
 	// TODO: https://github.com/vlang/v/issues/18256
 	originalptr voidptr @[required]
 mut:
-	instance &Object = &Object(Void{}) @[required]
+	instance &Object @[required]
 }
 
 fn (mut self Service) init() ! {
