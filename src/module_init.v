@@ -9,7 +9,7 @@ fn (mut self Module) internal_init() ! {
 		}
 
 		for typ in self.services.keys() {
-			if mut service := self.services[typ]{
+			if mut service := self.services[typ] {
 				service.init()!
 			}
 		}
