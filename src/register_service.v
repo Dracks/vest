@@ -54,11 +54,6 @@ pub fn (mut self Module) register[T]() &T {
 	for alias in get_aliases[T]() {
 		self.aliases[alias] = typ_idx
 	}
-	// Workarround to avoid a V bug
-	// ToDo: remove when https://github.com/vlang/v/issues/18294 is fixed
-	if false {
-		self.inject_to_object[T](mut new_service) or { panic(err) }
-	}
 	self.services[typ_idx] = Service{
 		name: T.name
 		typ: typ_idx
