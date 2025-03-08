@@ -54,17 +54,12 @@ pub fn (mut self Module) register[T]() &T {
 	for alias in get_aliases[T]() {
 		self.aliases[alias] = typ_idx
 	}
-	// Workarround to avoid a V bug
-	// ToDo: remove when https://github.com/vlang/v/issues/18294 is fixed
-	if false {
-		self.inject_to_object[T](mut new_service) or { panic(err) }
-	}
 	self.services[typ_idx] = Service{
-		name: T.name
-		typ: typ_idx
-		instance: new_service
+		name:        T.name
+		typ:         typ_idx
+		instance:    new_service
 		originalptr: new_service
-		inject: fn [mut self, mut new_service] [T]() ! {
+		inject:      fn [mut self, mut new_service] [T]() ! {
 			self.inject_to_object[T](mut new_service)!
 		}
 	}
@@ -82,11 +77,11 @@ pub fn (mut self Module) use_instance[T](data T, export bool) {
 	}
 
 	self.services[typ_idx] = Service{
-		name: T.name
-		typ: typ_idx
-		instance: instance
+		name:        T.name
+		typ:         typ_idx
+		instance:    instance
 		originalptr: instance
-		inject: fn () ! {}
+		inject:      fn () ! {}
 	}
 
 	if export {
@@ -118,7 +113,7 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
 	internal_export := export
 
 	self.factories << &Factory{
-		typ: typ_idx
+		typ:          typ_idx
 		dependencies: dependencies
 		// TODO this mut self is a problem, I need to avoid passing self here
 		can_instantiate: fn [mut self, dependencies] () bool {
@@ -129,7 +124,7 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
 			}
 			return true
 		}
-		build: fn [mut self, factory, typ_idx, internal_export] [F, T]() ! {
+		build:           fn [mut self, factory, typ_idx, internal_export] [F, T]() ! {
 			println('Building factory for ${T.name}')
 			mut dependencies_object := &F{}
 			self.inject_to_object(mut dependencies_object)!
@@ -137,11 +132,11 @@ pub fn (mut self Module) use_factory[F, T](factory fn (c F) T, export bool) {
 			original_instance := factory(dependencies_object)
 			instance := &original_instance
 			self.services[typ_idx] = Service{
-				name: T.name
-				typ: typ_idx
-				instance: instance
+				name:        T.name
+				typ:         typ_idx
+				instance:    instance
 				originalptr: instance
-				inject: fn () ! {}
+				inject:      fn () ! {}
 			}
 
 			if internal_export {

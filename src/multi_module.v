@@ -1,7 +1,5 @@
 module vest
 
-import arrays
-
 fn (self Module) get_all_childs(mut childs []&Module) {
 	for glob in self.globals {
 		if glob !in childs {

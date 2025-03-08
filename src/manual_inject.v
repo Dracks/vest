@@ -27,7 +27,9 @@ fn (mut self Module) internal_inject() ! {
 		}
 
 		for typ in self.services.keys() {
-			self.services[typ].inject()!
+			if mut service := self.services[typ] {
+				service.inject()!
+			}
 		}
 	}
 }
